@@ -1,0 +1,29 @@
+name: Build and publish
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Amber Linux's own archive follows amber-odin's monthly cadence
+    # (see amber-odin/.github/workflows/monthly-release.yml); this runs a
+    # day later so a same-month release has already landed in the archive.
+    - cron: '0 6 2 * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make ci
+
+  deploy:
+    if: github.event_name != 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          DOCKER_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: make deploy

@@ -1,0 +1,7 @@
+/build/
+
+# Agent files are local and are not shared.
+.claude/
+.mcp.json
+.claude-amber/
+.credentials.json

@@ -1,0 +1,8 @@
+# The Dockerfile has no COPY or ADD — the image is built entirely from apt —
+# so nothing from this directory belongs in the build context. Exclude
+# everything, then re-admit only the Dockerfile. This keeps .git/, build/
+# (where deploy briefly holds the Docker Hub token in .crane-config), and the
+# local agent files out of the context, and means a future COPY cannot pick
+# up anything that was not explicitly listed here.
+*
+!Dockerfile

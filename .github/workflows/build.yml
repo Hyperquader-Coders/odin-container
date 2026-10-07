@@ -11,11 +11,11 @@ on:
 permissions:
   contents: read
 
-# Critical, part of the toolchain: it runs on the org's own runner rather
-# than waiting for GitHub's free minutes.
+# A public repo, so GitHub's own runners: the org's self-hosted runner is for
+# private repos only.
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4

@@ -40,9 +40,8 @@ pulled image always carries an odin the suite is known to build with.
 
 `.github/workflows/build.yml` runs `make ci` (build, leak check, the
 packaged binaries) on every push and on demand. It never publishes and holds
-no Docker Hub token. odin-container is part of the toolchain, so it runs on
-the org's own runner (`runs-on: self-hosted`), not on GitHub's free minutes;
-the runner needs Docker.
+no Docker Hub token. It runs on GitHub's own runners (`ubuntu-latest`): the
+repo is public, and the org's self-hosted runner is for private repos only.
 
 ## Rotating the Docker Hub token
 

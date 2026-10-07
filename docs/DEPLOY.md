@@ -28,28 +28,26 @@ tag always move together and a pull always resolves to a build that passed
 `check`. `latest` is added with `crane tag`, which points a new tag at the
 already-uploaded manifest rather than re-uploading it.
 
-## Publishing from CI
+## When to publish
 
-`.github/workflows/build-publish.yml` runs `make ci` (build + check, no
-push) on every push, and `make deploy` only on `workflow_dispatch` or the
-monthly schedule — the same cadence `amber-odin` tracks upstream Odin on, so
-this image picks up a new package roughly when one exists to pick up.
+Publishing is never automatic. A new image goes out by hand, once the
+`amber-odin` package it installs has proved itself on the suite: the deb is
+in the archive and installed here, `amber-rebuild.sh` has built every suite
+repo with it, and their `make ci` passes. Only then `make deploy`, so a
+pulled image always carries an odin the suite is known to build with.
 
-odin-container is part of the toolchain, so both jobs run on the org's own
-runner (`runs-on: self-hosted`), not on GitHub's free minutes. The deploy job
-installs crane with `imjasonh/setup-crane`; the runner needs Docker.
+## CI
 
-The workflow needs `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` as **repository
-secrets** (Settings → Secrets and variables → Actions) — the same Docker Hub
-access token used locally, added there separately since GitHub Actions does
-not read this machine's environment. `gh secret set DOCKERHUB_TOKEN` from
-this repo's checkout sets it without the value ever appearing in a workflow
-log.
+`.github/workflows/build.yml` runs `make ci` (build, leak check, the
+packaged binaries) on every push and on demand. It never publishes and holds
+no Docker Hub token. odin-container is part of the toolchain, so it runs on
+the org's own runner (`runs-on: self-hosted`), not on GitHub's free minutes;
+the runner needs Docker.
 
 ## Rotating the Docker Hub token
 
 If `DOCKER_TOKEN` is ever compromised, revoke it from Docker Hub's Account
-Settings → Security → Access Tokens, issue a new one, and update both the
-local environment and the `DOCKERHUB_TOKEN` repository secret. A revoked
+Settings → Security → Access Tokens, issue a new one, and update the local
+environment. A revoked
 token fails `crane auth login` inside `deploy` immediately rather than
 pushing silently to the wrong place.

@@ -1,0 +1,22 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Build and check only. Publishing to Docker Hub is a manual `make deploy`,
+# after the suite has been built with the same odin (docs/DEPLOY.md), so
+# no workflow holds a Docker Hub token.
+permissions:
+  contents: read
+
+# Critical, part of the toolchain: it runs on the org's own runner rather
+# than waiting for GitHub's free minutes.
+jobs:
+  build:
+    runs-on: self-hosted
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: make ci

@@ -15,10 +15,12 @@ on:
 permissions:
   contents: read
 
+# Critical, part of the toolchain: both jobs run on the org's own runner
+# rather than waiting for GitHub's free minutes.
 jobs:
   build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: self-hosted
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - run: make ci
@@ -26,10 +28,12 @@ jobs:
   deploy:
     if: github.event_name != 'push'
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      # make deploy pushes with crane, never `docker login`; see the Makefile.
+      - uses: imjasonh/setup-crane@v0.4
       - env:
           DOCKER_USER: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKER_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}

@@ -35,6 +35,10 @@ push) on every push, and `make deploy` only on `workflow_dispatch` or the
 monthly schedule — the same cadence `amber-odin` tracks upstream Odin on, so
 this image picks up a new package roughly when one exists to pick up.
 
+odin-container is part of the toolchain, so both jobs run on the org's own
+runner (`runs-on: self-hosted`), not on GitHub's free minutes. The deploy job
+installs crane with `imjasonh/setup-crane`; the runner needs Docker.
+
 The workflow needs `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` as **repository
 secrets** (Settings → Secrets and variables → Actions) — the same Docker Hub
 access token used locally, added there separately since GitHub Actions does

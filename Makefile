@@ -14,8 +14,10 @@ ROOT_COMMIT_MSG ?= Initial odin-container
 VCS_REF := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 
+# --pull --no-cache: the apt layer would otherwise be reused from an earlier
+# build and ship whatever odin the archive had then.
 build: ## build the image as :build
-	docker build $(if $(ODIN_VERSION),--build-arg ODIN_VERSION=$(ODIN_VERSION)) \
+	docker build --pull --no-cache $(if $(ODIN_VERSION),--build-arg ODIN_VERSION=$(ODIN_VERSION)) \
 		--build-arg VCS_REF=$(VCS_REF) \
 		--build-arg BUILD_DATE=$(BUILD_DATE) \
 		-t $(IMAGE):build .
@@ -29,7 +31,10 @@ check: build check-no-leak ## build the image, prove nothing leaked in, run its 
 # tree could still get in, each checked against the built image itself:
 #   1. a COPY/ADD layer (the base image's own rootfs ADD is the one allowed);
 #   2. repo, agent or credential paths present in the filesystem;
-#   3. a Docker Hub token or local path baked into any file, env or label.
+#   3. a Docker Hub token or local path baked into any file, env or label,
+#      the packaged odin and ols binaries included. Upstream's odin is a static
+#      Alpine build and carries libgcc's paths under /home/buildozer/, Alpine's
+#      public package builder; that one name is allowed, nothing else.
 # Paths under /usr/lib/amber-odin are Odin's bundled source tree (its own
 # README.md and .gitignore files) and are dpkg-owned, so they are excluded.
 check-no-leak: ## refuse repo, agent or credential leftovers in the image
@@ -53,7 +58,10 @@ check-no-leak: ## refuse repo, agent or credential leftovers in the image
 		echo "  $$meta"; exit 2; \
 	fi
 	@strings=$$(docker run --rm $(IMAGE):build sh -c \
-		'grep -rIl -E "dckr_pat_|DOCKER_TOKEN|crane-config|/home/[a-z]+/" / --exclude-dir=proc --exclude-dir=sys --exclude-dir=dev --exclude-dir=amber-odin 2>/dev/null' || true); \
+		'grep -rIl -E "dckr_pat_|DOCKER_TOKEN|crane-config|/home/[a-z]+/" / --exclude-dir=proc --exclude-dir=sys --exclude-dir=dev --exclude-dir=amber-odin 2>/dev/null; \
+		 for f in /usr/bin/odin /usr/bin/ols $$(find /usr/lib/amber-odin /usr/lib/amber-ols -type f \( -name "*.so*" -o -perm -u+x \) 2>/dev/null); do \
+			[ -f "$$f" ] && grep -aoE "dckr_pat_|/home/[a-z]+/|/tmp/[^ ]*amber" "$$(readlink -f "$$f")" | grep -qv "^/home/buildozer/$$" && echo "$$f"; \
+		 done' | sort -u || true); \
 	if [ -n "$$strings" ]; then \
 		echo "check-no-leak: token or local path found inside image files:"; \
 		echo "$$strings" | sed 's/^/  /'; exit 2; \
@@ -82,14 +90,16 @@ CRANE_CONFIG := build/.crane-config
 # target and are removed at the end, win or lose. Never push :build
 # directly — tag derives the real version tag first so latest and the pin
 # move together.
+# The token is read from the environment by the shell, never expanded by make:
+# a make expansion would put it on the command line, where ps shows it.
 deploy: tag ## publish both tags to Docker Hub (DOCKER_USER, DOCKER_TOKEN)
-	@test -n "$(DOCKER_TOKEN)" || { echo "DOCKER_TOKEN not set"; exit 1; }
-	@test -n "$(DOCKER_USER)" || { echo "DOCKER_USER not set"; exit 1; }
+	@test -n "$$DOCKER_TOKEN" || { echo "DOCKER_TOKEN not set"; exit 1; }
+	@test -n "$$DOCKER_USER" || { echo "DOCKER_USER not set"; exit 1; }
 	@ver="$$(cat build/version)"; \
 	rm -rf $(CRANE_CONFIG); mkdir -p $(CRANE_CONFIG); \
 	trap 'rm -rf $(CRANE_CONFIG) build/image.tar' EXIT; \
 	docker save $(IMAGE):build -o build/image.tar; \
-	echo "$(DOCKER_TOKEN)" | DOCKER_CONFIG=$(CRANE_CONFIG) crane auth login index.docker.io -u "$(DOCKER_USER)" --password-stdin; \
+	printf '%s' "$$DOCKER_TOKEN" | DOCKER_CONFIG=$(CRANE_CONFIG) crane auth login index.docker.io -u "$$DOCKER_USER" --password-stdin; \
 	DOCKER_CONFIG=$(CRANE_CONFIG) crane push build/image.tar "$(IMAGE):$$ver"; \
 	DOCKER_CONFIG=$(CRANE_CONFIG) crane tag "$(IMAGE):$$ver" latest; \
 	echo "pushed $(IMAGE):$$ver and $(IMAGE):latest"

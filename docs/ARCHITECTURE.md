@@ -51,6 +51,9 @@ timestamp), both passed in as build args by `make build` so the `LABEL`
 instruction itself never changes between builds. It sits last in the
 Dockerfile, after every `apt-get` layer — those two values change on every
 build, and placing them early would bust the cache for every layer below.
+`make build` still runs with `--pull --no-cache`: a cached apt layer would ship
+whatever `amber-odin` the archive had when it was cached (once, August's odin
+under an October tag), so every build asks apt again.
 There is no label for the installed `odin`/`ols` version: the image tag
 already carries it, so a second copy would only drift from the first.
 

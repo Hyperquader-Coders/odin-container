@@ -40,7 +40,7 @@ pulled image always carries an odin the suite is known to build with.
 
 `.github/workflows/build.yml` runs `make ci` (build, leak check, the
 packaged binaries) on every push and on demand. It never publishes and holds
-no Docker Hub token. It runs on GitHub's own runners (`ubuntu-latest`): the
+no Docker Hub token. It runs on GitHub's own runners (`ubuntu-24.04`): the
 repo is public, and the org's self-hosted runner is for private repos only.
 
 ## Rotating the Docker Hub token

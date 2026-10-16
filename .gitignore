@@ -1,0 +1,11 @@
+# build/ holds deploy's version file, image tarball and crane config; nothing
+# is packaged into dist/ and nothing writes out/, but all three stay ignored.
+/build/
+/dist/
+/out/
+
+# Agent files are local and are not shared.
+.claude/
+.mcp.json
+.claude-amber/
+.credentials.json

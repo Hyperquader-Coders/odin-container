@@ -1,0 +1,36 @@
+amber-odin: {
+  label: "amber-odin\n.deb builds"
+  shape: rectangle
+  odin-deb: "amber-odin\n(compiler)" { shape: rectangle }
+  ols-deb: "amber-ols\n(LSP)" { shape: rectangle }
+}
+
+archive: "apt.amberlinux.org\n(amberlinux-apt)" {
+  shape: cylinder
+}
+
+container: "odin-container\nDockerfile" {
+  shape: rectangle
+  base: "ubuntu:24.04" { shape: rectangle }
+  install: "apt-get install\namber-odin amber-ols" { shape: rectangle }
+  base -> install
+}
+
+hub: "Docker Hub\nhyperquader/odin-container" {
+  shape: cylinder
+}
+
+consumers: "consumers" {
+  shape: rectangle
+  ci: "CI runners\n(non-GHA)" { shape: rectangle }
+  dev: "dev machines" { shape: rectangle }
+  base-image: "FROM ...\nother repos" { shape: rectangle }
+}
+
+amber-odin.odin-deb -> archive: "make deb-upstream"
+amber-odin.ols-deb -> archive: "make deb-ols"
+archive -> container.install: "signed-by keyring"
+container -> hub: "make deploy"
+hub -> consumers.ci: "docker pull"
+hub -> consumers.dev: "docker pull"
+hub -> consumers.base-image: "docker pull"

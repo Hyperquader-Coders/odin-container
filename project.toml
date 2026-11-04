@@ -1,0 +1,29 @@
+# What odin-container is and needs from apt: nothing, as the image is built by Docker, which the
+# runner and a desk already have; the workflow runs `make init-packages` all the same, so a
+# package added here reaches the runner. house-rules docs/PROJECT_TOML.md has the layout.
+[project]
+schema = "amber-project-1"
+name = "odin-container"
+license = "BSD-3-Clause"
+kind = "other"
+summary = "Odin compiler and OLS in a Docker image, from the signed Amber Linux apt archive"
+tags = [
+  "ai-assisted",
+  "amber",
+  "amberlinux",
+  "compiler",
+  "containers",
+  "odin",
+  "ols",
+]
+steps = [
+  "init-modules",
+  "check",
+  "lint",
+]
+
+[build]
+packages = []
+
+[test]
+packages = []
